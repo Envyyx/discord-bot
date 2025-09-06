@@ -52,10 +52,13 @@ async function handleHelpCommand(msg) {
         },
         {
             title: "⚽ Sports Commands",
-            description: "Premier League fixtures and information",
+            description: "Complete Premier League coverage powered by professional API",
             fields: [
-                { name: "`-fixtures` / `-pl`", value: "Show today's Premier League fixtures", inline: false },
-                { name: "`-table` / `-pltable`", value: "Display current Premier League table", inline: false }
+                { name: "`-fixtures` / `-pl`", value: "🗓️ Today's Premier League fixtures with venues", inline: false },
+                { name: "`-table` / `-pltable`", value: "📊 Current Premier League standings with zones", inline: false },
+                { name: "`-live` / `-livescores`", value: "🔴 Live match scores (updates every 15 seconds)", inline: false },
+                { name: "`-next` / `-upcoming`", value: "📅 Next 8 upcoming Premier League fixtures", inline: false },
+                { name: "🏆 Features", value: "• Real-time scores\n• Champions League zones\n• Match venues & times\n• Live minute updates", inline: false }
             ],
             color: 0x3F1582
         },

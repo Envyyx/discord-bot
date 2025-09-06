@@ -184,6 +184,10 @@ client.on('message', async (msg) => {
             case 'upcoming':
                 await sportsCommands.handlePLNextCommand(msg);
                 break;
+            case 'sportshelp':
+            case 'football':
+                await sportsCommands.handleSportsHelpCommand(msg);
+                break;
 
             // Moderation Commands
             case 'addban':

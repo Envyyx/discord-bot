@@ -275,9 +275,43 @@ async function handlePLNextCommand(msg) {
     }
 }
 
+// Sports help command
+async function handleSportsHelpCommand(msg) {
+    msg.delete().catch(() => {});
+    
+    const embed = new Discord.MessageEmbed()
+        .setTitle("⚽ Sports Commands - Premier League Coverage")
+        .setDescription("Professional football data powered by API-Football")
+        .setColor(0x3F1582)
+        .setThumbnail("https://media.api-sports.io/football/leagues/39.png")
+        .addField("📅 **Today's Fixtures**", 
+            "`-fixtures` / `-pl` / `-premierleague`\nShow today's Premier League matches with kick-off times and venues", 
+            false)
+        .addField("📊 **League Table**", 
+            "`-table` / `-pltable`\nCurrent Premier League standings with:\n🟢 Champions League spots\n🟡 Europa League\n🟠 Conference League\n🔴 Relegation zone", 
+            false)
+        .addField("🔴 **Live Scores**", 
+            "`-live` / `-livescores`\nReal-time match scores updating every 15 seconds\nShows current minute and match status", 
+            false)
+        .addField("📅 **Upcoming Fixtures**", 
+            "`-next` / `-upcoming`\nNext 8 Premier League matches with dates and times", 
+            false)
+        .addField("✨ **Professional Features**", 
+            "• **Real-time updates** - Live scores every 15 seconds\n• **Official data** - Same API used by major sports sites\n• **Comprehensive info** - Venues, times, standings\n• **Visual indicators** - Color-coded league positions", 
+            false)
+        .addField("🏆 **Data Source**", 
+            "Powered by API-Football - trusted by professional sports platforms worldwide", 
+            false)
+        .setFooter("Try any command above to get started!")
+        .setTimestamp();
+    
+    msg.channel.send(embed);
+}
+
 module.exports = {
     handlePLFixturesCommand,
     handlePLTableCommand,
     handlePLLiveCommand,
-    handlePLNextCommand
+    handlePLNextCommand,
+    handleSportsHelpCommand
 };
