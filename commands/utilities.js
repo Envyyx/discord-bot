@@ -71,6 +71,17 @@ async function handleHelpCommand(msg) {
             color: 0xF8B500
         },
         {
+            title: "🛡️ Moderation Commands",
+            description: "Content filtering and moderation tools (Admin only)",
+            fields: [
+                { name: "`-addban [word]`", value: "Add a word to the banned list", inline: false },
+                { name: "`-removeban [word]`", value: "Remove a word from the banned list", inline: false },
+                { name: "`-listban`", value: "Show all banned words", inline: false },
+                { name: "`-clearwarnings [@user]`", value: "Clear warnings for a user", inline: false }
+            ],
+            color: 0xE74C3C
+        },
+        {
             title: "ℹ️ Bot Information",
             description: "About this Discord bot",
             fields: [
