@@ -1,6 +1,34 @@
 const Discord = require('discord.js');
 const fetch = require('node-fetch');
 
+// API-Football configuration
+const API_BASE_URL = 'https://v3.football.api-sports.io';
+const PREMIER_LEAGUE_ID = 39; // Premier League ID in api-football
+const CURRENT_SEASON = 2024; // Current season
+
+// Helper function to make API requests
+async function makeApiRequest(endpoint) {
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'GET',
+            headers: {
+                'x-apisports-key': process.env.API_FOOTBALL_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
 // Premier League fixtures command
 async function handlePLFixturesCommand(msg) {
     msg.delete().catch(() => {});
@@ -12,24 +40,12 @@ async function handlePLFixturesCommand(msg) {
         // Get current date in YYYY-MM-DD format
         const today = new Date().toISOString().split('T')[0];
         
-        // Fetch fixtures from Fantasy Premier League API
-        const response = await fetch('https://fantasy.premierleague.com/api/fixtures/');
-        const fixtures = await response.json();
-        
-        // Get team data for team names
-        const bootstrapResponse = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');
-        const bootstrapData = await bootstrapResponse.json();
-        const teams = bootstrapData.teams;
-        
-        // Filter fixtures for today
-        const todayFixtures = fixtures.filter(fixture => {
-            const fixtureDate = new Date(fixture.kickoff_time).toISOString().split('T')[0];
-            return fixtureDate === today && fixture.finished === false;
-        });
+        // Fetch today's fixtures from api-football
+        const data = await makeApiRequest(`/fixtures?league=${PREMIER_LEAGUE_ID}&season=${CURRENT_SEASON}&date=${today}`);
         
         loadingMsg.delete().catch(() => {});
         
-        if (todayFixtures.length === 0) {
+        if (!data.response || data.response.length === 0) {
             return msg.channel.send("📅 No Premier League fixtures scheduled for today.");
         }
         
@@ -38,14 +54,16 @@ async function handlePLFixturesCommand(msg) {
             .setTitle("⚽ Today's Premier League Fixtures")
             .setColor(0x3F1582)
             .setTimestamp()
-            .setFooter("Premier League", "https://resources.premierleague.com/premierleague/badges/25/t3.png");
+            .setFooter("Powered by API-Football", "https://media.api-sports.io/football/leagues/39.png");
         
         // Add fixtures to embed
-        todayFixtures.forEach(fixture => {
-            const homeTeam = teams.find(team => team.id === fixture.team_h);
-            const awayTeam = teams.find(team => team.id === fixture.team_a);
+        data.response.forEach(fixture => {
+            const homeTeam = fixture.teams.home.name;
+            const awayTeam = fixture.teams.away.name;
+            const venue = fixture.fixture.venue.name;
             
-            const kickoffTime = new Date(fixture.kickoff_time);
+            // Format kick-off time
+            const kickoffTime = new Date(fixture.fixture.date);
             const timeString = kickoffTime.toLocaleTimeString('en-GB', { 
                 hour: '2-digit', 
                 minute: '2-digit',
@@ -53,18 +71,21 @@ async function handlePLFixturesCommand(msg) {
             });
             
             let matchStatus = '';
-            if (fixture.started) {
-                if (fixture.finished) {
-                    matchStatus = `**FT** ${fixture.team_h_score} - ${fixture.team_a_score}`;
-                } else {
-                    matchStatus = `**LIVE** ${fixture.team_h_score || 0} - ${fixture.team_a_score || 0}`;
-                }
+            const status = fixture.fixture.status.short;
+            
+            if (status === 'FT') {
+                matchStatus = `**FT** ${fixture.goals.home} - ${fixture.goals.away}`;
+            } else if (['1H', '2H', 'HT', 'LIVE'].includes(status)) {
+                const minute = fixture.fixture.status.elapsed || '0';
+                matchStatus = `**LIVE ${minute}'** ${fixture.goals.home || 0} - ${fixture.goals.away || 0}`;
+            } else if (status === 'NS') {
+                matchStatus = `**${timeString}** UK Time\n📍 ${venue}`;
             } else {
-                matchStatus = `**${timeString}** UK Time`;
+                matchStatus = `**${status}** ${fixture.goals.home || 0} - ${fixture.goals.away || 0}`;
             }
             
             embed.addField(
-                `${homeTeam.name} vs ${awayTeam.name}`,
+                `${homeTeam} vs ${awayTeam}`,
                 matchStatus,
                 true
             );
@@ -85,36 +106,57 @@ async function handlePLTableCommand(msg) {
     try {
         const loadingMsg = await msg.channel.send("📊 Fetching Premier League table...");
         
-        // Fetch league table from Fantasy Premier League API
-        const response = await fetch('https://fantasy.premierleague.com/api/bootstrap-static/');
-        const data = await response.json();
-        const teams = data.teams;
-        
-        // Sort teams by position
-        teams.sort((a, b) => a.position - b.position);
+        // Fetch league standings from api-football
+        const data = await makeApiRequest(`/standings?league=${PREMIER_LEAGUE_ID}&season=${CURRENT_SEASON}`);
         
         loadingMsg.delete().catch(() => {});
         
+        if (!data.response || data.response.length === 0) {
+            return msg.channel.send("❌ No Premier League standings available.");
+        }
+        
+        const standings = data.response[0].league.standings[0];
+        
         const embed = new Discord.MessageEmbed()
-            .setTitle("📊 Premier League Table")
+            .setTitle("📊 Premier League Table 2024/25")
             .setColor(0x3F1582)
             .setTimestamp()
-            .setFooter("Premier League", "https://resources.premierleague.com/premierleague/badges/25/t3.png");
+            .setFooter("Powered by API-Football", "https://media.api-sports.io/football/leagues/39.png");
         
-        // Add top 10 teams to embed
-        const topTeams = teams.slice(0, 10);
-        let tableText = '';
+        // Split into two sections for better formatting
+        let topHalf = '';
+        let bottomHalf = '';
         
-        topTeams.forEach((team, index) => {
-            const position = index + 1;
-            tableText += `**${position}.** ${team.name} - ${team.points}pts\n`;
+        standings.forEach((team, index) => {
+            const position = team.rank;
+            const name = team.team.name;
+            const played = team.all.played;
+            const points = team.points;
+            const goalDiff = team.goalsDiff >= 0 ? `+${team.goalsDiff}` : team.goalsDiff;
+            
+            // Add position indicators
+            let indicator = '';
+            if (position <= 4) indicator = '🟢'; // Champions League
+            else if (position === 5) indicator = '🟡'; // Europa League
+            else if (position === 6) indicator = '🟠'; // Conference League
+            else if (position >= 18) indicator = '🔴'; // Relegation
+            
+            const teamLine = `${indicator} **${position}.** ${name}\n📊 ${played}P • ${points}pts • ${goalDiff}GD\n\n`;
+            
+            if (index < 10) {
+                topHalf += teamLine;
+            } else {
+                bottomHalf += teamLine;
+            }
         });
         
-        embed.addField("Top 10 Teams", tableText, false);
+        embed.addField("Positions 1-10", topHalf, true);
+        embed.addField("Positions 11-20", bottomHalf, true);
         
-        if (teams.length > 10) {
-            embed.addField("More Teams", `... and ${teams.length - 10} more teams`, false);
-        }
+        // Add legend
+        embed.addField("🏆 Legend", 
+            "🟢 Champions League\n🟡 Europa League\n🟠 Conference League\n🔴 Relegation", 
+            false);
         
         msg.channel.send(embed);
         
@@ -124,7 +166,118 @@ async function handlePLTableCommand(msg) {
     }
 }
 
+// Premier League live scores command
+async function handlePLLiveCommand(msg) {
+    msg.delete().catch(() => {});
+    
+    try {
+        const loadingMsg = await msg.channel.send("⚽ Fetching live Premier League matches...");
+        
+        // Fetch live fixtures from api-football
+        const data = await makeApiRequest(`/fixtures?league=${PREMIER_LEAGUE_ID}&season=${CURRENT_SEASON}&live=all`);
+        
+        loadingMsg.delete().catch(() => {});
+        
+        if (!data.response || data.response.length === 0) {
+            return msg.channel.send("📺 No Premier League matches are currently live.");
+        }
+        
+        const embed = new Discord.MessageEmbed()
+            .setTitle("🔴 LIVE Premier League Matches")
+            .setColor(0xFF0000)
+            .setTimestamp()
+            .setFooter("Live • Updates every 15 seconds", "https://media.api-sports.io/football/leagues/39.png");
+        
+        data.response.forEach(fixture => {
+            const homeTeam = fixture.teams.home.name;
+            const awayTeam = fixture.teams.away.name;
+            const homeScore = fixture.goals.home || 0;
+            const awayScore = fixture.goals.away || 0;
+            const minute = fixture.fixture.status.elapsed;
+            const status = fixture.fixture.status.short;
+            
+            let statusText = '';
+            if (status === 'HT') {
+                statusText = '**HALF TIME**';
+            } else if (status === '1H') {
+                statusText = `**${minute}' 1ST HALF**`;
+            } else if (status === '2H') {
+                statusText = `**${minute}' 2ND HALF**`;
+            } else {
+                statusText = `**${minute}' LIVE**`;
+            }
+            
+            embed.addField(
+                `${homeTeam} ${homeScore} - ${awayScore} ${awayTeam}`,
+                statusText,
+                true
+            );
+        });
+        
+        msg.channel.send(embed);
+        
+    } catch (error) {
+        console.error('Premier League live error:', error);
+        msg.channel.send("❌ Failed to fetch live Premier League matches. Please try again later.");
+    }
+}
+
+// Get next Premier League fixtures
+async function handlePLNextCommand(msg) {
+    msg.delete().catch(() => {});
+    
+    try {
+        const loadingMsg = await msg.channel.send("⚽ Fetching next Premier League fixtures...");
+        
+        // Get next 10 fixtures
+        const data = await makeApiRequest(`/fixtures?league=${PREMIER_LEAGUE_ID}&season=${CURRENT_SEASON}&next=10`);
+        
+        loadingMsg.delete().catch(() => {});
+        
+        if (!data.response || data.response.length === 0) {
+            return msg.channel.send("📅 No upcoming Premier League fixtures found.");
+        }
+        
+        const embed = new Discord.MessageEmbed()
+            .setTitle("📅 Next Premier League Fixtures")
+            .setColor(0x3F1582)
+            .setTimestamp()
+            .setFooter("Powered by API-Football", "https://media.api-sports.io/football/leagues/39.png");
+        
+        data.response.slice(0, 8).forEach(fixture => {
+            const homeTeam = fixture.teams.home.name;
+            const awayTeam = fixture.teams.away.name;
+            
+            const matchDate = new Date(fixture.fixture.date);
+            const dateString = matchDate.toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+            });
+            const timeString = matchDate.toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Europe/London'
+            });
+            
+            embed.addField(
+                `${homeTeam} vs ${awayTeam}`,
+                `📅 ${dateString}\n⏰ ${timeString} UK`,
+                true
+            );
+        });
+        
+        msg.channel.send(embed);
+        
+    } catch (error) {
+        console.error('Premier League next fixtures error:', error);
+        msg.channel.send("❌ Failed to fetch next Premier League fixtures. Please try again later.");
+    }
+}
+
 module.exports = {
     handlePLFixturesCommand,
-    handlePLTableCommand
+    handlePLTableCommand,
+    handlePLLiveCommand,
+    handlePLNextCommand
 };
