@@ -55,7 +55,12 @@ module.exports = {
         bypassRoles: ['Admin', 'Moderator'], // Roles that bypass word filtering
         warnings: {
             enabled: true,
-            maxWarnings: 3 // After 3 warnings, additional actions can be taken
+            maxWarnings: 3, // After 3 warnings, automatic action is taken
+            actions: {
+                timeout: true,        // Try to timeout user first (10 minutes)
+                kick: true,          // If timeout fails, try to kick
+                requirePermissions: true // Only take action if bot has permissions
+            }
         }
     }
 };

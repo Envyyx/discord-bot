@@ -55,19 +55,49 @@ async function filterMessage(msg, bannedWords, logChannelName, bypassRoles) {
         // Add warning to user
         const userId = msg.author.id;
         const currentWarnings = userWarnings.get(userId) || 0;
-        userWarnings.set(userId, currentWarnings + 1);
+        const newWarningCount = currentWarnings + 1;
+        userWarnings.set(userId, newWarningCount);
+
+        // Determine if maximum warnings reached
+        const maxWarnings = config.moderation.warnings.maxWarnings;
+        const maxWarningsReached = newWarningCount >= maxWarnings;
+        let actionTaken = null;
+
+        // Take action if max warnings reached
+        if (maxWarningsReached && msg.member) {
+            try {
+                // Try to timeout user for 10 minutes
+                await msg.member.timeout(10 * 60 * 1000, `Reached maximum warnings (${maxWarnings}) for inappropriate language`);
+                actionTaken = `🔇 User timed out for 10 minutes`;
+            } catch (error) {
+                console.error('Failed to timeout user:', error);
+                // If timeout fails, try to kick
+                try {
+                    await msg.member.kick(`Reached maximum warnings (${maxWarnings}) for inappropriate language`);
+                    actionTaken = `👢 User kicked from server`;
+                } catch (kickError) {
+                    console.error('Failed to kick user:', kickError);
+                    actionTaken = `⚠️ Unable to take automatic action - insufficient permissions`;
+                }
+            }
+        }
 
         // Create log embed
         const logEmbed = new Discord.MessageEmbed()
             .setTitle('🚫 Message Flagged and Deleted')
-            .setColor(0xFF0000)
+            .setColor(maxWarningsReached ? 0x8B0000 : 0xFF0000)
             .addField('User', `${msg.author.tag} (${msg.author.id})`, true)
             .addField('Channel', `${msg.channel.name} (${msg.channel.id})`, true)
             .addField('Flagged Words', foundWords.join(', '), true)
             .addField('Original Message', msg.content.length > 1024 ? msg.content.substring(0, 1021) + '...' : msg.content, false)
-            .addField('Warnings', `${currentWarnings + 1}/${config.moderation.warnings.maxWarnings}`, true)
+            .addField('Warnings', `${newWarningCount}/${maxWarnings}${maxWarningsReached ? ' ⚠️ MAX REACHED' : ''}`, true)
             .setTimestamp()
             .setThumbnail(msg.author.displayAvatarURL());
+
+        // Add action taken field if applicable
+        if (actionTaken) {
+            logEmbed.addField('Action Taken', actionTaken, false);
+        }
 
         // Send to log channel
         await logChannel.send(logEmbed);
@@ -75,20 +105,32 @@ async function filterMessage(msg, bannedWords, logChannelName, bypassRoles) {
         // Send warning to user
         try {
             const warningEmbed = new Discord.MessageEmbed()
-                .setTitle('⚠️ Message Deleted')
-                .setDescription('Your message contained inappropriate content and has been removed.')
+                .setTitle(maxWarningsReached ? '🚨 Final Warning - Action Taken' : '⚠️ Message Deleted')
+                .setDescription(maxWarningsReached ? 
+                    'You have reached the maximum number of warnings. Disciplinary action has been taken.' :
+                    'Your message contained inappropriate content and has been removed.')
                 .addField('Reason', `Inappropriate language: ${foundWords.join(', ')}`, false)
-                .addField('Warnings', `${currentWarnings + 1}/${config.moderation.warnings.maxWarnings}`, false)
-                .setColor(0xFFA500)
+                .addField('Warnings', `${newWarningCount}/${maxWarnings}`, false)
+                .setColor(maxWarningsReached ? 0x8B0000 : 0xFFA500)
                 .setTimestamp();
+
+            if (actionTaken) {
+                warningEmbed.addField('Consequence', actionTaken, false);
+            }
+
+            if (maxWarningsReached) {
+                warningEmbed.addField('Next Steps', 'Contact a moderator if you believe this action was taken in error.', false);
+            }
 
             await msg.author.send(warningEmbed);
         } catch (error) {
             // User has DMs disabled, send warning in channel
-            const warningMsg = await msg.channel.send(
-                `⚠️ ${msg.author}, your message was deleted for inappropriate content. Warning ${currentWarnings + 1}/${config.moderation.warnings.maxWarnings}`
-            );
-            setTimeout(() => warningMsg.delete().catch(() => {}), 5000);
+            const warningText = maxWarningsReached ? 
+                `🚨 ${msg.author}, maximum warnings reached. ${actionTaken || 'Action taken.'}` :
+                `⚠️ ${msg.author}, your message was deleted for inappropriate content. Warning ${newWarningCount}/${maxWarnings}`;
+                
+            const warningMsg = await msg.channel.send(warningText);
+            setTimeout(() => warningMsg.delete().catch(() => {}), maxWarningsReached ? 10000 : 5000);
         }
 
         return true; // Message was filtered
