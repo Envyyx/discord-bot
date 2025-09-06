@@ -1,0 +1,23 @@
+Unhandled Rejection at: Promise {
+  <rejected> TypeError: msg.delete is not a function
+      at Object.handleCalculateCommand (/home/runner/workspace/commands/utilities.js:143:15)
+      at Client.<anonymous> (/home/runner/workspace/index.js:78:35)
+      at Client.emit (node:events:513:28)
+      at MessageCreateAction.handle (/home/runner/workspace/node_modules/discord.js/src/client/actions/MessageCreate.js:31:14)
+      at module.exports [as MESSAGE_CREATE] (/home/runner/workspace/node_modules/discord.js/src/client/websocket/handlers/MESSAGE_CREATE.js:4:32)
+      at WebSocketManager.handlePacket (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:384:31)
+      at WebSocketShard.onPacket (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:444:22)
+      at WebSocketShard.onMessage (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:301:10)
+      at WebSocket.onMessage (/home/runner/workspace/node_modules/ws/lib/event-target.js:132:16)
+      at WebSocket.emit (node:events:513:28)
+} reason: TypeError: msg.delete is not a function
+    at Object.handleCalculateCommand (/home/runner/workspace/commands/utilities.js:143:15)
+    at Client.<anonymous> (/home/runner/workspace/index.js:78:35)
+    at Client.emit (node:events:513:28)
+    at MessageCreateAction.handle (/home/runner/workspace/node_modules/discord.js/src/client/actions/MessageCreate.js:31:14)
+    at module.exports [as MESSAGE_CREATE] (/home/runner/workspace/node_modules/discord.js/src/client/websocket/handlers/MESSAGE_CREATE.js:4:32)
+    at WebSocketManager.handlePacket (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:384:31)
+    at WebSocketShard.onPacket (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:444:22)
+    at WebSocketShard.onMessage (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:301:10)
+    at WebSocket.onMessage (/home/runner/workspace/node_modules/ws/lib/event-target.js:132:16)
+    at WebSocket.emit (node:events:513:28)

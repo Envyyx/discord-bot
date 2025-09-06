@@ -1,0 +1,64 @@
+ if (msg.content.startsWith('-clear')) {
+                const deleteCount = parseInt(args[0]);
+                
+                // Validation checks
+                if (!args[0] || isNaN(deleteCount)) {
+                        return msg.reply("❌ Please enter a valid number of messages to delete!");
+                }
+                
+                if (deleteCount > 100) {
+                        return msg.reply("❌ Cannot delete more than 100 messages at once!");
+                }
+                
+                if (deleteCount < 1) {
+                        return msg.reply("❌ Must delete at least 1 message!");
+                }
+
+                // Check permissions
+                if (!msg.member.hasPermission('MANAGE_MESSAGES')) {
+                        return msg.reply("❌ You don't have permission to delete messages!");
+                }
+
+                // Fetch messages first (including the command message)
+                msg.channel.messages.fetch({ limit: deleteCount + 1 })
+                        .then(messages => {
+                                // Remove the command message from the collection if it exists
+                                messages.delete(msg.id);
+                                
+                                // If we don't have enough messages after removing the command, fetch more
+                                if (messages.size < deleteCount) {
+                                        return msg.channel.messages.fetch({ 
+                                                limit: deleteCount - messages.size,
+                                                before: messages.last()?.id 
+                                        }).then(additionalMessages => {
+                                                return messages.concat(additionalMessages);
+                                        });
+                                }
+                                
+                                // Take only the requested number of messages
+                                const messagesToDelete = messages.first(deleteCount);
+                                return msg.channel.bulkDelete(messagesToDelete, true);
+                        })
+                        .then(deletedMessages => {
+                                // Delete the command message after processing
+                                msg.delete().catch(() => {});
+                                
+                                // Send confirmation message
+                                msg.channel.send(`✅ Successfully deleted ${deletedMessages.size} message(s)!`)
+                                        .then(confirmMsg => {
+                                                // Auto-delete confirmation after 3 seconds
+                                                setTimeout(() => {
+                                                        confirmMsg.delete().catch(() => {});
+                                                }, 3000);
+                                        })
+                                        .catch(() => {});
+                        })
+                        .catch(error => {
+                                console.error('Clear command error:', error);
+                                msg.channel.send("❌ Failed to delete messages. They might be too old (over 14 days) or I lack permissions.")
+                                        .then(errMsg => {
+                                                setTimeout(() => errMsg.delete().catch(() => {}), 5000);
+                                        })
+                                        .catch(() => {});
+                        });
+        }

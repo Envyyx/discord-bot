@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+
+# Replit specific files
+.replit
+replit.nix
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Mac files
+.DS_Store
+
+# Windows files
+Thumbs.db

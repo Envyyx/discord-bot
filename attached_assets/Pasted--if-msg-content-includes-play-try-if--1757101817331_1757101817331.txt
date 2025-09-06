@@ -1,0 +1,66 @@
+
+        if (msg.content.includes('-play')) {
+                try {
+                        if (!msg.member.voice.channel) return msg.channel.send("❌ You're not in a voice channel.");
+
+                        const message = msg.content;
+                        var song = message.replace('-play', '').trim();
+
+                        if (!song) {
+                                return msg.channel.send("❌ Please provide a YouTube URL. Usage: `-play [YouTube URL]`");
+                        }
+
+                        // Validate if it's a YouTube URL
+                        if (!song.includes('youtube.com') && !song.includes('youtu.be')) {
+                                return msg.channel.send("❌ Please provide a valid YouTube URL.");
+                        }
+
+                        msg.channel.send("🎵 Loading music...").then(loadingMsg => {
+                                setTimeout(() => loadingMsg.delete().catch(() => {}), 5000);
+                        });
+
+                        msg.delete();
+
+                        // Join voice channel first
+                        msg.member.voice.channel.join()
+                                .then(connection => {
+                                        try {
+                                                let stream = ytdl(song, {
+                                                        filter: "audioonly",
+                                                        opusEncoded: false,
+                                                        fmt: "mp3",
+                                                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                                                });
+
+                                                let dispatcher = connection.play(stream, {
+                                                        type: "unknown"
+                                                })
+                                                        .on("start", () => {
+                                                                msg.channel.send("🎵 Now playing!").then(playMsg => {
+                                                                        setTimeout(() => playMsg.delete().catch(() => {}), 3000);
+                                                                });
+                                                        })
+                                                        .on("finish", () => {
+                                                                msg.guild.me.voice.channel.leave();
+                                                        })
+                                                        .on("error", (error) => {
+                                                                console.error('Stream error:', error);
+                                                                msg.channel.send("❌ Error playing audio. The video might be unavailable or restricted.");
+                                                                msg.guild.me.voice.channel.leave();
+                                                        });
+                                        } catch (streamError) {
+                                                console.error('ytdl-core error:', streamError);
+                                                msg.channel.send("❌ Failed to load video. It might be unavailable, private, or age-restricted.");
+                                                connection.disconnect();
+                                        }
+                                })
+                                .catch(voiceError => {
+                                        console.error('Voice connection error:', voiceError);
+                                        msg.channel.send("❌ Failed to join voice channel. Check my permissions.");
+                                });
+                }
+                catch (err) {
+                        console.error('Play command error:', err);
+                        msg.channel.send("❌ An error occurred while trying to play music.");
+                }
+        }
