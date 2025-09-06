@@ -1,0 +1,48 @@
+DISCORD BOT - GITHUB UPLOAD GUIDE
+=====================================
+
+You need to create these 3 folders with the following files:
+
+1. CREATE FOLDER: commands
+   - Create: commands/music.js
+   - Create: commands/games.js  
+   - Create: commands/utilities.js
+   - Create: commands/social.js
+   - Create: commands/sports.js
+
+2. CREATE FOLDER: config
+   - Create: config/config.js
+
+3. CREATE FOLDER: utils
+   - Create: utils/helpers.js
+
+STEP-BY-STEP PROCESS:
+====================
+
+1. In your GitHub repository, click "Create new file"
+2. Type: commands/music.js (this creates the commands folder automatically)
+3. Copy-paste the content from your Replit commands/music.js file
+4. Repeat for all 8 files listed above
+
+SHORTCUT: 
+=========
+Instead of typing all the code, you can:
+1. Open each file in your Replit workspace
+2. Copy the entire content (Ctrl+A, Ctrl+C)  
+3. Paste it into the corresponding GitHub file
+
+FILES TO COPY:
+==============
+✅ package.json (DONE)
+✅ index.js (DONE)
+✅ README.md (DONE)
+✅ .gitignore (DONE)
+⏳ commands/music.js (NEED TO DO)
+⏳ commands/games.js (NEED TO DO)
+⏳ commands/utilities.js (NEED TO DO)
+⏳ commands/social.js (NEED TO DO)
+⏳ commands/sports.js (NEED TO DO)
+⏳ config/config.js (NEED TO DO)
+⏳ utils/helpers.js (NEED TO DO)
+
+Once you upload all 8 remaining files, your bot will be ready for Render deployment!
