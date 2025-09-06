@@ -40,5 +40,22 @@ module.exports = {
         quality: 'lowestaudio',
         opusEncoded: false,
         format: 'mp3'
+    },
+
+    // Moderation settings
+    moderation: {
+        enabled: true,
+        logChannelName: 'mod-logs', // Channel name where flagged messages will be sent
+        bannedWords: [
+            // Add banned words here (case insensitive)
+            'badword1',
+            'badword2',
+            'spam'
+        ],
+        bypassRoles: ['Admin', 'Moderator'], // Roles that bypass word filtering
+        warnings: {
+            enabled: true,
+            maxWarnings: 3 // After 3 warnings, additional actions can be taken
+        }
     }
 };
