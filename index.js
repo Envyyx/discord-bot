@@ -8,6 +8,7 @@ const gameCommands = require('./commands/games');
 const utilityCommands = require('./commands/utilities');
 const socialCommands = require('./commands/social');
 const sportsCommands = require('./commands/sports');
+const moderationCommands = require('./commands/moderation');
 
 // Initialize Discord client with proper intents
 const client = new Discord.Client({
@@ -60,6 +61,19 @@ client.on('message', async (msg) => {
     // Handle DMs separately
     if (msg.channel.type === 'dm') {
         return socialCommands.handleDMCommands(msg, client);
+    }
+
+    // Word filtering (before processing any commands)
+    if (config.moderation.enabled && !msg.content.startsWith(config.prefix)) {
+        const wasFiltered = await moderationCommands.filterMessage(
+            msg,
+            config.moderation.bannedWords,
+            config.moderation.logChannelName,
+            config.moderation.bypassRoles
+        );
+        if (wasFiltered) {
+            return; // Message was deleted, don't process further
+        }
     }
 
     // Check for product codes without prefix (e.g., "qtrs 5", "bb 10")
@@ -161,6 +175,24 @@ client.on('message', async (msg) => {
             case 'table':
             case 'pltable':
                 await sportsCommands.handlePLTableCommand(msg);
+                break;
+
+            // Moderation Commands
+            case 'addban':
+            case 'addword':
+                await moderationCommands.handleAddBannedWordCommand(msg);
+                break;
+            case 'removeban':
+            case 'removeword':
+                await moderationCommands.handleRemoveBannedWordCommand(msg);
+                break;
+            case 'listban':
+            case 'banlist':
+                await moderationCommands.handleListBannedWordsCommand(msg);
+                break;
+            case 'clearwarnings':
+            case 'clearwarn':
+                await moderationCommands.handleClearWarningsCommand(msg);
                 break;
 
             // Unknown command
