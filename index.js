@@ -176,6 +176,14 @@ client.on('message', async (msg) => {
             case 'pltable':
                 await sportsCommands.handlePLTableCommand(msg);
                 break;
+            case 'live':
+            case 'livescores':
+                await sportsCommands.handlePLLiveCommand(msg);
+                break;
+            case 'next':
+            case 'upcoming':
+                await sportsCommands.handlePLNextCommand(msg);
+                break;
 
             // Moderation Commands
             case 'addban':
