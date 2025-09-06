@@ -61,26 +61,6 @@ async function filterMessage(msg, bannedWords, logChannelName, bypassRoles) {
         // Determine if maximum warnings reached
         const maxWarnings = config.moderation.warnings.maxWarnings;
         const maxWarningsReached = newWarningCount >= maxWarnings;
-        let actionTaken = null;
-
-        // Take action if max warnings reached
-        if (maxWarningsReached && msg.member) {
-            try {
-                // Try to timeout user for 10 minutes
-                await msg.member.timeout(10 * 60 * 1000, `Reached maximum warnings (${maxWarnings}) for inappropriate language`);
-                actionTaken = `🔇 User timed out for 10 minutes`;
-            } catch (error) {
-                console.error('Failed to timeout user:', error);
-                // If timeout fails, try to kick
-                try {
-                    await msg.member.kick(`Reached maximum warnings (${maxWarnings}) for inappropriate language`);
-                    actionTaken = `👢 User kicked from server`;
-                } catch (kickError) {
-                    console.error('Failed to kick user:', kickError);
-                    actionTaken = `⚠️ Unable to take automatic action - insufficient permissions`;
-                }
-            }
-        }
 
         // Create log embed
         const logEmbed = new Discord.MessageEmbed()
@@ -94,9 +74,9 @@ async function filterMessage(msg, bannedWords, logChannelName, bypassRoles) {
             .setTimestamp()
             .setThumbnail(msg.author.displayAvatarURL());
 
-        // Add action taken field if applicable
-        if (actionTaken) {
-            logEmbed.addField('Action Taken', actionTaken, false);
+        // Add note for moderators if max warnings reached
+        if (maxWarningsReached) {
+            logEmbed.addField('📋 Moderator Note', 'User has reached maximum warnings. Manual action may be required.', false);
         }
 
         // Send to log channel
@@ -105,32 +85,28 @@ async function filterMessage(msg, bannedWords, logChannelName, bypassRoles) {
         // Send warning to user
         try {
             const warningEmbed = new Discord.MessageEmbed()
-                .setTitle(maxWarningsReached ? '🚨 Final Warning - Action Taken' : '⚠️ Message Deleted')
+                .setTitle(maxWarningsReached ? '🚨 Maximum Warnings Reached' : '⚠️ Message Deleted')
                 .setDescription(maxWarningsReached ? 
-                    'You have reached the maximum number of warnings. Disciplinary action has been taken.' :
+                    'You have reached the maximum number of warnings. Please be more careful with your language.' :
                     'Your message contained inappropriate content and has been removed.')
                 .addField('Reason', `Inappropriate language: ${foundWords.join(', ')}`, false)
                 .addField('Warnings', `${newWarningCount}/${maxWarnings}`, false)
                 .setColor(maxWarningsReached ? 0x8B0000 : 0xFFA500)
                 .setTimestamp();
 
-            if (actionTaken) {
-                warningEmbed.addField('Consequence', actionTaken, false);
-            }
-
             if (maxWarningsReached) {
-                warningEmbed.addField('Next Steps', 'Contact a moderator if you believe this action was taken in error.', false);
+                warningEmbed.addField('Next Steps', 'A moderator has been notified. Please follow server rules to avoid further issues.', false);
             }
 
             await msg.author.send(warningEmbed);
         } catch (error) {
             // User has DMs disabled, send warning in channel
             const warningText = maxWarningsReached ? 
-                `🚨 ${msg.author}, maximum warnings reached. ${actionTaken || 'Action taken.'}` :
+                `🚨 ${msg.author}, maximum warnings reached (${newWarningCount}/${maxWarnings}). Please be more careful with your language.` :
                 `⚠️ ${msg.author}, your message was deleted for inappropriate content. Warning ${newWarningCount}/${maxWarnings}`;
                 
             const warningMsg = await msg.channel.send(warningText);
-            setTimeout(() => warningMsg.delete().catch(() => {}), maxWarningsReached ? 10000 : 5000);
+            setTimeout(() => warningMsg.delete().catch(() => {}), maxWarningsReached ? 8000 : 5000);
         }
 
         return true; // Message was filtered
