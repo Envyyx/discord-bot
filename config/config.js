@@ -52,10 +52,6 @@ module.exports = {
             'badword2',
             'spam'
         ],
-        bypassRoles: ['Admin', 'Moderator'], // Roles that bypass word filtering
-        warnings: {
-            enabled: true,
-            maxWarnings: 3 // After 3 warnings, moderators are notified for manual action
-        }
+        bypassRoles: ['Admin', 'Moderator'] // Roles that bypass word filtering
     }
 };

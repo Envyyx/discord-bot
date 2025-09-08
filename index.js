@@ -202,10 +202,6 @@ client.on('message', async (msg) => {
             case 'banlist':
                 await moderationCommands.handleListBannedWordsCommand(msg);
                 break;
-            case 'clearwarnings':
-            case 'clearwarn':
-                await moderationCommands.handleClearWarningsCommand(msg);
-                break;
 
             // Unknown command
             default:
