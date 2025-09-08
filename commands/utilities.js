@@ -58,6 +58,7 @@ async function handleHelpCommand(msg) {
                 { name: "`-table` / `-pltable`", value: "📊 Current Premier League standings with zones", inline: false },
                 { name: "`-live` / `-livescores`", value: "🔴 Live match scores (updates every 15 seconds)", inline: false },
                 { name: "`-next` / `-upcoming`", value: "📅 Next 8 upcoming Premier League fixtures", inline: false },
+                { name: "`-sportshelp` / `-football`", value: "📖 Detailed sports commands guide and features", inline: false },
                 { name: "🏆 Features", value: "• Real-time scores\n• Champions League zones\n• Match venues & times\n• Live minute updates", inline: false }
             ],
             color: 0x3F1582
@@ -88,9 +89,14 @@ async function handleHelpCommand(msg) {
             title: "ℹ️ Bot Information",
             description: "About this Discord bot",
             fields: [
-                { name: "Features", value: "Music playback, games, calculations, utilities", inline: false },
-                { name: "Prefix", value: "All commands start with `-`", inline: false },
-                { name: "Support", value: "Bot handles errors gracefully and provides helpful feedback", inline: false }
+                { name: "🎵 Music", value: "YouTube audio playback in voice channels", inline: true },
+                { name: "⚽ Sports", value: "Live Premier League data via professional API", inline: true },
+                { name: "🎮 Games", value: "8-ball, dice, coinflip, rock-paper-scissors, memes", inline: true },
+                { name: "🔢 Calculations", value: "Product weight calculations with instant shortcuts", inline: true },
+                { name: "🛡️ Moderation", value: "Automatic word filtering with logging", inline: true },
+                { name: "💬 Social", value: "Greetings, DM messaging, user interactions", inline: true },
+                { name: "Command Prefix", value: "All commands start with `-`", inline: false },
+                { name: "Special Features", value: "• No-prefix product calculations (e.g., `qtrs 5`)\n• Paginated help menu with navigation\n• Auto-moderation with clean logging\n• Professional sports data integration", inline: false }
             ],
             color: 0x9B59B6
         }
