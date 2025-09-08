@@ -190,7 +190,7 @@ function handleCalculateCommand(msg) {
     } else {
         // For any other product, just multiply by the number
         const baseValue = 1;
-        const total = baseValue * number;
+        const total = parseFloat((baseValue * number).toFixed(2));
         
         const embed = new Discord.MessageEmbed()
             .setTitle("🧮 Simple Calculation")

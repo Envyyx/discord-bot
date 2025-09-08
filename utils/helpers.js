@@ -28,12 +28,12 @@ function safeDisconnect(connection) {
 // Product calculation helper
 function calculateProduct(productName, quantity) {
     const product = config.products[productName.toLowerCase()] || config.products.default;
-    const totalWeight = quantity * product.weightPerUnit;
+    const totalWeight = parseFloat((quantity * product.weightPerUnit).toFixed(2));
     return {
         product: productName,
         quantity: quantity,
         unit: product.unit,
-        weightPerUnit: product.weightPerUnit,
+        weightPerUnit: parseFloat(product.weightPerUnit.toFixed(2)),
         totalWeight: totalWeight
     };
 }
