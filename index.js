@@ -13,11 +13,11 @@ const moderationCommands = require('./commands/moderation');
 // Initialize Discord client with proper intents
 const client = new Discord.Client({
     intents: [
-        Discord.Intents.FLAGS.GUILDS,
-        Discord.Intents.FLAGS.GUILD_MESSAGES,
-        Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-        Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-        Discord.Intents.FLAGS.MESSAGE_CONTENT
+        Discord.GatewayIntentBits.Guilds,
+        Discord.GatewayIntentBits.GuildMessages,
+        Discord.GatewayIntentBits.GuildVoiceStates,
+        Discord.GatewayIntentBits.GuildMessageReactions,
+        Discord.GatewayIntentBits.MessageContent
     ]
 });
 
@@ -36,18 +36,24 @@ process.on('unhandledRejection', (reason, promise) => {
 // Bot login
 client.login(process.env.DISCORD_TOKEN);
 
+// Collection to store slash commands
+client.commands = new Discord.Collection();
+
 // Ready event - set bot status and activity
-client.on('ready', () => {
+client.on('ready', async () => {
     console.log(`${client.user.tag} is ready!`);
+
+    // Register slash commands
+    await registerSlashCommands(client);
 
     // Set random activity every 15 seconds
     setInterval(() => {
         const activity = getRandomActivity();
         client.user.setPresence({
-            activity: {
+            activities: [{
                 name: activity,
-                type: 'PLAYING'
-            },
+                type: Discord.ActivityType.Playing
+            }],
             status: 'dnd'
         });
     }, 15000);
@@ -219,3 +225,76 @@ client.on('message', async (msg) => {
 
 // Export client for other modules
 module.exports = client;
+
+// Slash command registration function
+async function registerSlashCommands(client) {
+    const commands = [
+        {
+            name: "play",
+            description: "Play music from YouTube or other sources",
+            options: [
+                {
+                    name: "url",
+                    description: "YouTube URL or search term",
+                    type: Discord.ApplicationCommandOptionType.String,
+                    required: true
+                }
+            ]
+        }
+    ];
+
+    try {
+        console.log("Started refreshing application (/) commands.");
+        
+        await client.application.commands.set(commands);
+        
+        console.log("Successfully reloaded application (/) commands.");
+    } catch (error) {
+        console.error("Error registering slash commands:", error);
+    }
+}
+
+// Handle slash command interactions
+client.on("interactionCreate", async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const { commandName } = interaction;
+
+    try {
+        if (commandName === "play") {
+            const url = interaction.options.getString("url");
+            
+            // Create a fake message object for compatibility with existing music command
+            const fakeMsg = {
+                author: interaction.user,
+                member: interaction.member,
+                guild: interaction.guild,
+                channel: interaction.channel,
+                content: `-play ${url}`,
+                delete: () => Promise.resolve(), // No-op for slash commands
+                reply: (content) => interaction.reply(content)
+            };
+            
+            // Acknowledge the interaction first
+            await interaction.deferReply();
+            
+            // Call existing music command
+            await musicCommands.handleMusicCommand(fakeMsg);
+            
+            // If no reply was sent, send a default response
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply("🎵 Processing your music request...");
+            }
+        }
+    } catch (error) {
+        console.error("Error handling slash command:", error);
+        
+        const errorMessage = "❌ An error occurred while processing your command.";
+        
+        if (interaction.deferred) {
+            await interaction.editReply(errorMessage);
+        } else if (!interaction.replied) {
+            await interaction.reply(errorMessage);
+        }
+    }
+});
